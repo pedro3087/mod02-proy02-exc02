@@ -18,6 +18,7 @@ This project contains automated tests for web application testing using Selenium
 - **Multiple browser windows/tabs handling**
 - **Window switching and management strategies**
 - **JavaScript alerts handling (Alert, Confirm, Prompt)**
+- **iFrame handling and interaction**
 - **Organized package structure by functionality**
 
 ## 🛠️ Technology Stack
@@ -98,6 +99,7 @@ mvn test -Dtest=WindowsAlertsFramesFormTest
 # Run specific test method
 mvn test -Dtest=WindowsAlertsFramesFormTest#testWindows
 mvn test -Dtest=WindowsAlertsFramesFormTest#testAlerts
+mvn test -Dtest=WindowsAlertsFramesFormTest#testFrames
 
 # Run all tests
 mvn test
@@ -283,6 +285,33 @@ xdg-open target/site/surefire-report.html
 - **Comprehensive Validation**: All alert results verified
 - **Error Handling**: Proper wait conditions to avoid timeouts
 
+### Test Method: `testFrames()`
+
+**Test Steps**:
+1. Navigate to `https://the-internet.herokuapp.com/iframe`
+2. **iFrame Switching**: Use WebDriverWait to switch to iframe by ID
+3. **Editor Interaction**: Find text editor element inside iframe
+4. **Content Management**: Clear existing content and set new text using JavaScript
+5. **Context Switching**: Switch back to main document using defaultContent()
+6. **Validation**: Re-switch to iframe to verify content
+7. **Content Assertion**: Assert that text equals "Text inside the frame"
+8. **Cleanup**: Switch back to default content
+
+**iFrame Handling Strategies Demonstrated**:
+- **Frame Detection**: `ExpectedConditions.frameToBeAvailableAndSwitchToIt()` for reliable iframe access
+- **Context Switching**: Proper switching between iframe and main document
+- **JavaScript Integration**: Using `JavascriptExecutor` for TinyMCE editor interaction
+- **Content Management**: `innerHTML` manipulation for reliable content setting
+- **Element Location**: Finding elements within iframe context
+- **Validation Strategy**: Re-switching to iframe for content verification
+
+**Key Features**:
+- **TinyMCE Compatibility**: Handles special TinyMCE editor behavior
+- **JavaScript Execution**: Uses `innerHTML` for reliable content management
+- **Context Management**: Proper iframe to main document switching
+- **Robust Validation**: Comprehensive content verification
+- **Error Handling**: Proper wait conditions and context management
+
 ### Base Test Class: `BaseTest`
 
 **Features**:
@@ -403,6 +432,7 @@ JAVA_HOME=C:\Program Files\Java\java-11
 - ✅ **Multiple browser windows/tabs handling implemented**
 - ✅ **Window switching and management strategies**
 - ✅ **JavaScript alerts handling (Alert, Confirm, Prompt) implemented**
+- ✅ **iFrame handling and interaction implemented**
 - ✅ **Organized package structure by functionality**
 - ✅ **All tests passing successfully**
 
@@ -463,6 +493,13 @@ For questions or issues:
 - **User Input Simulation**: Text input in prompt alerts
 - **Result Validation**: Comprehensive assertion testing for all alert results
 
+### iFrame Handling
+- **Frame Detection**: `ExpectedConditions.frameToBeAvailableAndSwitchToIt()` for reliable iframe access
+- **Context Switching**: Proper switching between iframe and main document
+- **JavaScript Integration**: Using `JavascriptExecutor` for complex editor interactions
+- **Content Management**: `innerHTML` manipulation for reliable content setting
+- **TinyMCE Compatibility**: Handles special TinyMCE editor behavior
+
 ### WebDriver Management
 - **WebDriverManager Integration**: Automatic driver download and management
 - **No Manual Setup**: ChromeDriver automatically downloaded and configured
@@ -483,5 +520,5 @@ For questions or issues:
 **Maven Version**: 3.9.11  
 **Selenium Version**: 4.23.0  
 **WebDriverManager Version**: 5.6.3  
-**Test Status**: ✅ All Tests Passing (3 Test Methods in 2 Test Classes)  
+**Test Status**: ✅ All Tests Passing (4 Test Methods in 2 Test Classes)  
 **Report Status**: 📊 Beautiful HTML Reports with Screenshots Generated

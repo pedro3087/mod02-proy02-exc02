@@ -2,6 +2,8 @@ package com.example.tests.windows;
 
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -126,5 +128,47 @@ public class WindowsAlertsFramesFormTest extends BaseTest {
         assertEquals("You entered: Hola QA", promptResult, "JS Prompt result should match expected text");
         
         System.out.println("All alert tests completed successfully!");
+    }
+
+    @Test
+    public void testFrames() {
+        // Navigate to the iframe page
+        driver.get("https://the-internet.herokuapp.com/iframe");
+        
+        // Wait for iframe to be available and switch to it
+        System.out.println("Switching to iframe...");
+        wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(By.id("mce_0_ifr")));
+        
+        // Find the text editor element inside the iframe
+        WebElement textEditor = driver.findElement(By.id("tinymce"));
+        System.out.println("Found text editor inside iframe");
+        
+        // Use JavaScript to clear and set content in TinyMCE editor
+        String testText = "Text inside the frame";
+        ((JavascriptExecutor) driver).executeScript("arguments[0].innerHTML = '';", textEditor);
+        ((JavascriptExecutor) driver).executeScript("arguments[0].innerHTML = arguments[1];", textEditor, testText);
+        System.out.println("Set text in editor using JavaScript: " + testText);
+        
+        // Switch back to the main document
+        driver.switchTo().defaultContent();
+        System.out.println("Switched back to main document");
+        
+        // Validation: Re-switch to the iframe to verify content
+        System.out.println("Re-switching to iframe for validation...");
+        wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(By.id("mce_0_ifr")));
+        
+        // Get the text from the editor
+        WebElement editorForValidation = driver.findElement(By.id("tinymce"));
+        String actualText = editorForValidation.getText();
+        System.out.println("Actual text in editor: " + actualText);
+        
+        // Assert the text equals what we sent
+        assertEquals(testText, actualText, "Text in iframe editor should match the sent text");
+        
+        // Switch back to default content
+        driver.switchTo().defaultContent();
+        System.out.println("Switched back to main document after validation");
+        
+        System.out.println("Iframe test completed successfully!");
     }
 }
