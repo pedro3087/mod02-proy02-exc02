@@ -1,4 +1,4 @@
-package com.example.navwaits;
+package com.example.utils;
 
 import java.io.*;
 import java.nio.file.*;

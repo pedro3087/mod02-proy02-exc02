@@ -1,4 +1,4 @@
-package com.example.navwaits;
+package com.example.utils;
 
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.TakesScreenshot;

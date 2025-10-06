@@ -1,4 +1,4 @@
-package com.example.navwaits;
+package com.example.base;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

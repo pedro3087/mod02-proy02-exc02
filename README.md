@@ -17,6 +17,8 @@ This project contains automated tests for web application testing using Selenium
 - **WebDriverWait support with configurable timeouts**
 - **Multiple browser windows/tabs handling**
 - **Window switching and management strategies**
+- **JavaScript alerts handling (Alert, Confirm, Prompt)**
+- **Organized package structure by functionality**
 
 ## 🛠️ Technology Stack
 
@@ -42,13 +44,17 @@ Mod2-Proy02-Ejercicio2/
         └── java/
             └── com/
                 └── example/
-                    ├── navwaits/
-                    │   ├── BaseTest.java                    # Base test class with WebDriverManager & WebDriverWait
-                    │   ├── InventoryFlowTest.java           # Main test class
-                    │   ├── WindowsAlertsFramesFormTest.java # Windows handling test class
-                    │   ├── ScreenshotUtil.java              # Screenshot capture utility
-                    │   └── ReportGenerator.java             # HTML report generator
-                    └── webtesting/                          # Additional test packages
+                    ├── base/
+                    │   └── BaseTest.java                    # Base test class with WebDriverManager & WebDriverWait
+                    ├── tests/
+                    │   ├── ecommerce/
+                    │   │   └── InventoryFlowTest.java       # E-commerce flow testing
+                    │   └── windows/
+                    │       └── WindowsAlertsFramesFormTest.java # Windows and alerts handling
+                    ├── utils/
+                    │   ├── ReportGenerator.java             # HTML report generator
+                    │   └── ScreenshotUtil.java              # Screenshot capture utility
+                    └── webtesting/                          # Future general web tests
 ```
 
 ## 🚀 Getting Started
@@ -83,11 +89,15 @@ mvn test
 
 #### Run Specific Test Class
 ```bash
-# Run inventory flow test
+# Run e-commerce flow test
 mvn test -Dtest=InventoryFlowTest
 
-# Run windows handling test
+# Run windows and alerts handling test
 mvn test -Dtest=WindowsAlertsFramesFormTest
+
+# Run specific test method
+mvn test -Dtest=WindowsAlertsFramesFormTest#testWindows
+mvn test -Dtest=WindowsAlertsFramesFormTest#testAlerts
 
 # Run all tests
 mvn test
@@ -246,6 +256,33 @@ xdg-open target/site/surefire-report.html
 - **Assertion Validation**: Verifies expected window behavior
 - **Console Logging**: Detailed output for debugging and verification
 
+### Test Method: `testAlerts()`
+
+**Test Steps**:
+1. Navigate to `https://the-internet.herokuapp.com/javascript_alerts`
+2. **JS Alert Test**: Click "Click for JS Alert" button and accept alert
+3. **Alert Validation**: Verify result text is "You successfully clicked an alert"
+4. **JS Confirm Test**: Click "Click for JS Confirm" button and dismiss alert
+5. **Confirm Validation**: Verify result text is "You clicked: Cancel"
+6. **JS Prompt Test**: Click "Click for JS Prompt" button
+7. **Prompt Interaction**: Send "Hola QA" text and accept alert
+8. **Prompt Validation**: Verify result text is "You entered: Hola QA"
+
+**Alert Handling Strategies Demonstrated**:
+- **Alert Detection**: `ExpectedConditions.alertIsPresent()` for reliable waiting
+- **Alert Interaction**: `driver.switchTo().alert()` for alert access
+- **Alert Actions**: `accept()`, `dismiss()`, and `sendKeys()` methods
+- **Result Validation**: JUnit 5 assertions for all alert results
+- **XPath Locators**: Precise button identification using text content
+- **Console Logging**: Detailed output for debugging and verification
+
+**Key Features**:
+- **Three Alert Types**: Alert, Confirm, and Prompt handling
+- **Robust Wait Strategy**: WebDriverWait for alert presence
+- **User Input Simulation**: Text input in prompt alerts
+- **Comprehensive Validation**: All alert results verified
+- **Error Handling**: Proper wait conditions to avoid timeouts
+
 ### Base Test Class: `BaseTest`
 
 **Features**:
@@ -276,6 +313,24 @@ xdg-open target/site/surefire-report.html
 - `webdrivermanager`: Automatic WebDriver management
 - `extentreports`: Rich HTML reporting capabilities
 - `aspectjweaver`: Advanced reporting and screenshot integration
+
+### Package Organization
+
+The project follows a clean, organized package structure by functionality:
+
+**Package Structure**:
+- **`com.example.base`**: Base test classes and common functionality
+- **`com.example.tests.ecommerce`**: E-commerce specific test cases
+- **`com.example.tests.windows`**: Windows and alerts handling tests
+- **`com.example.utils`**: Utility classes for reporting and screenshots
+- **`com.example.webtesting`**: Future general web testing (reserved)
+
+**Benefits**:
+- **Clear Separation**: Each package has a specific purpose
+- **Easy Navigation**: Find tests by domain/functionality
+- **Scalable**: Easy to add new test domains
+- **Maintainable**: Related files grouped together
+- **Team Collaboration**: Clear structure for multiple developers
 
 ### System Properties
 
@@ -347,6 +402,8 @@ JAVA_HOME=C:\Program Files\Java\java-11
 - ✅ **Step-by-step visual test documentation**
 - ✅ **Multiple browser windows/tabs handling implemented**
 - ✅ **Window switching and management strategies**
+- ✅ **JavaScript alerts handling (Alert, Confirm, Prompt) implemented**
+- ✅ **Organized package structure by functionality**
 - ✅ **All tests passing successfully**
 
 ## 🤝 Contributing
@@ -399,12 +456,25 @@ For questions or issues:
 - **Step Documentation**: Detailed descriptions for each test step with visual confirmation
 - **Professional Presentation**: Modern, responsive design suitable for stakeholder review
 
+### JavaScript Alerts Handling
+- **Alert Types**: Support for Alert, Confirm, and Prompt dialogs
+- **Alert Detection**: `ExpectedConditions.alertIsPresent()` for reliable waiting
+- **Alert Actions**: `accept()`, `dismiss()`, and `sendKeys()` methods
+- **User Input Simulation**: Text input in prompt alerts
+- **Result Validation**: Comprehensive assertion testing for all alert results
+
 ### WebDriver Management
 - **WebDriverManager Integration**: Automatic driver download and management
 - **No Manual Setup**: ChromeDriver automatically downloaded and configured
 - **Version Compatibility**: Automatically matches driver version to browser version
 - **Cross-Platform**: Works on Windows, macOS, and Linux
 - **WebDriverWait Support**: Built-in 10-second timeout for explicit waits
+
+### Package Organization
+- **Functional Structure**: Organized by test type and functionality
+- **Clear Separation**: Base classes, test classes, and utilities in separate packages
+- **Scalable Design**: Easy to add new test domains and functionality
+- **Maintainable Code**: Related files grouped together for better organization
 
 ---
 
@@ -413,5 +483,5 @@ For questions or issues:
 **Maven Version**: 3.9.11  
 **Selenium Version**: 4.23.0  
 **WebDriverManager Version**: 5.6.3  
-**Test Status**: ✅ All Tests Passing (2 Test Classes)  
+**Test Status**: ✅ All Tests Passing (3 Test Methods in 2 Test Classes)  
 **Report Status**: 📊 Beautiful HTML Reports with Screenshots Generated

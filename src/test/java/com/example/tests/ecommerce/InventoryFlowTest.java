@@ -1,4 +1,4 @@
-package com.example.navwaits;
+package com.example.tests.ecommerce;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -7,6 +7,9 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import java.time.Duration;
+import com.example.base.BaseTest;
+import com.example.utils.ScreenshotUtil;
+import com.example.utils.ReportGenerator;
 
 public class InventoryFlowTest extends BaseTest {
     @Test
