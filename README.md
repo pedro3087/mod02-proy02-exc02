@@ -100,6 +100,7 @@ mvn test -Dtest=WindowsAlertsFramesFormTest
 mvn test -Dtest=WindowsAlertsFramesFormTest#testWindows
 mvn test -Dtest=WindowsAlertsFramesFormTest#testAlerts
 mvn test -Dtest=WindowsAlertsFramesFormTest#testFrames
+mvn test -Dtest=WindowsAlertsFramesFormTest#testFormAutomation
 
 # Run all tests
 mvn test
@@ -308,6 +309,35 @@ xdg-open target/site/surefire-report.html
 **Key Features**:
 - **TinyMCE Compatibility**: Handles special TinyMCE editor behavior
 - **JavaScript Execution**: Uses `innerHTML` for reliable content management
+
+**Test Method**: `testFormAutomation()`
+
+**Test Steps**:
+1. Navigate to `https://www.selenium.dev/selenium/web/web-form.html`
+2. **Text Input**: Fill text input field (name="my-text") with "Memo QA"
+3. **Password Field**: Fill password field (name="my-password") with "Secreto123"
+4. **Textarea**: Fill textarea field (name="my-textarea") with "Some comments for the form."
+5. **Radio Button**: Click radio button "Option 2" using ID selector
+6. **Checkbox**: Click checkbox with fallback for ElementClickInterceptedException
+7. **Dropdown**: Select "Two" from dropdown using XPath
+8. **Form Submission**: Click Submit button
+9. **Confirmation Wait**: Wait for confirmation message to be visible
+10. **Validation**: Assert confirmation text is "Received!"
+
+**Form Automation Strategies Demonstrated**:
+- **Field Clearing**: Using `clear()` before entering new text
+- **Multiple Input Types**: Handling text, password, and textarea fields
+- **Radio Button Selection**: Direct clicking on radio button elements
+- **Checkbox Handling**: Try-catch pattern with JavaScript fallback
+- **Dropdown Interaction**: Clicking dropdown and selecting specific options
+- **Form Submission**: Complete end-to-end form submission
+- **Success Validation**: Waiting for and asserting confirmation messages
+
+**Key Features**:
+- **Robust Locators**: Using ID, name, and XPath selectors appropriately
+- **Error Handling**: JavaScript fallback for click interception issues
+- **Form Validation**: Complete form submission workflow with confirmation
+- **Multiple Element Types**: Text inputs, radio buttons, checkboxes, dropdowns
 - **Context Management**: Proper iframe to main document switching
 - **Robust Validation**: Comprehensive content verification
 - **Error Handling**: Proper wait conditions and context management
@@ -433,6 +463,9 @@ JAVA_HOME=C:\Program Files\Java\java-11
 - ✅ **Window switching and management strategies**
 - ✅ **JavaScript alerts handling (Alert, Confirm, Prompt) implemented**
 - ✅ **iFrame handling and interaction implemented**
+- ✅ **Form automation with multiple input types implemented**
+- ✅ **Radio button, checkbox, and dropdown handling implemented**
+- ✅ **Form submission and confirmation validation implemented**
 - ✅ **Organized package structure by functionality**
 - ✅ **All tests passing successfully**
 
@@ -520,5 +553,5 @@ For questions or issues:
 **Maven Version**: 3.9.11  
 **Selenium Version**: 4.23.0  
 **WebDriverManager Version**: 5.6.3  
-**Test Status**: ✅ All Tests Passing (4 Test Methods in 2 Test Classes)  
+**Test Status**: ✅ All Tests Passing (5 Test Methods in 2 Test Classes)  
 **Report Status**: 📊 Beautiful HTML Reports with Screenshots Generated

@@ -171,4 +171,71 @@ public class WindowsAlertsFramesFormTest extends BaseTest {
         
         System.out.println("Iframe test completed successfully!");
     }
+
+    /**
+     * Test for form automation
+     * Demonstrates filling form fields, handling radio buttons, checkboxes, dropdowns, and form submission
+     */
+    @Test
+    public void testFormAutomation() {
+        System.out.println("Starting form automation test...");
+        
+        driver.get("https://www.selenium.dev/selenium/web/web-form.html");
+        System.out.println("Navigated to form page");
+
+        // Fill the text input field
+        WebElement textInput = driver.findElement(By.name("my-text"));
+        textInput.clear();
+        textInput.sendKeys("Memo QA");
+        System.out.println("Filled text input field with: Memo QA");
+
+        // Fill the password field
+        WebElement passwordInput = driver.findElement(By.name("my-password"));
+        passwordInput.clear();
+        passwordInput.sendKeys("Secreto123");
+        System.out.println("Filled password field");
+
+        // Fill the textarea field
+        WebElement textarea = driver.findElement(By.name("my-textarea"));
+        textarea.clear();
+        textarea.sendKeys("Some comments for the form.");
+        System.out.println("Filled textarea field");
+
+        // Click the radio button labeled "Option 2"
+        WebElement radioOption2 = driver.findElement(By.id("my-radio-2"));
+        radioOption2.click();
+        System.out.println("Selected radio button Option 2");
+
+        // Click the checkbox with fallback for ElementClickInterceptedException
+        WebElement checkbox = driver.findElement(By.cssSelector("input[type='checkbox']"));
+        try {
+            checkbox.click();
+            System.out.println("Clicked checkbox using regular click");
+        } catch (Exception e) {
+            // Fallback to JavaScript click if regular click fails
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", checkbox);
+            System.out.println("Clicked checkbox using JavaScript click (fallback)");
+        }
+
+        // Select "Two" from the dropdown
+        WebElement dropdown = driver.findElement(By.name("my-select"));
+        dropdown.click();
+        WebElement optionTwo = driver.findElement(By.xpath("//option[normalize-space()='Two']"));
+        optionTwo.click();
+        System.out.println("Selected 'Two' from dropdown");
+
+        // Click the Submit button
+        WebElement submitButton = driver.findElement(By.xpath("//button[normalize-space()='Submit']"));
+        submitButton.click();
+        System.out.println("Clicked Submit button");
+
+        // Wait for the confirmation message to be visible
+        WebElement confirmationMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("message")));
+        System.out.println("Confirmation message appeared: " + confirmationMessage.getText());
+
+        // Assert that the confirmation text is "Received!"
+        assertEquals("Received!", confirmationMessage.getText(), "Form submission confirmation should be 'Received!'");
+        
+        System.out.println("Form automation test completed successfully!");
+    }
 }
