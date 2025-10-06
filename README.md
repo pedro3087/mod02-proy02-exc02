@@ -15,6 +15,8 @@ This project contains automated tests for web application testing using Selenium
 - Step-by-step visual test documentation
 - **WebDriverManager integration for automatic driver management**
 - **WebDriverWait support with configurable timeouts**
+- **Multiple browser windows/tabs handling**
+- **Window switching and management strategies**
 
 ## 🛠️ Technology Stack
 
@@ -41,11 +43,12 @@ Mod2-Proy02-Ejercicio2/
             └── com/
                 └── example/
                     ├── navwaits/
-                    │   ├── BaseTest.java           # Base test class with WebDriverManager & WebDriverWait
-                    │   ├── InventoryFlowTest.java  # Main test class
-                    │   ├── ScreenshotUtil.java     # Screenshot capture utility
-                    │   └── ReportGenerator.java    # HTML report generator
-                    └── webtesting/                 # Additional test packages
+                    │   ├── BaseTest.java                    # Base test class with WebDriverManager & WebDriverWait
+                    │   ├── InventoryFlowTest.java           # Main test class
+                    │   ├── WindowsAlertsFramesFormTest.java # Windows handling test class
+                    │   ├── ScreenshotUtil.java              # Screenshot capture utility
+                    │   └── ReportGenerator.java             # HTML report generator
+                    └── webtesting/                          # Additional test packages
 ```
 
 ## 🚀 Getting Started
@@ -80,7 +83,14 @@ mvn test
 
 #### Run Specific Test Class
 ```bash
+# Run inventory flow test
 mvn test -Dtest=InventoryFlowTest
+
+# Run windows handling test
+mvn test -Dtest=WindowsAlertsFramesFormTest
+
+# Run all tests
+mvn test
 ```
 
 #### Run Tests with Different Browsers
@@ -207,6 +217,35 @@ xdg-open target/site/surefire-report.html
 - **Stale Element Handling**: Re-finding elements after DOM updates
 - **Navigation Wait**: Waiting for page transitions and element visibility
 
+### Test Class: `WindowsAlertsFramesFormTest`
+
+**Test Method**: `testWindows()`
+
+**Test Steps**:
+1. Navigate to `https://the-internet.herokuapp.com/windows`
+2. **Window Handle Management**: Get and store the original window handle
+3. **Link Interaction**: Find and click the "Click Here" link
+4. **Window Wait**: Use WebDriverWait to wait until 2 windows are present
+5. **Window Switching**: Iterate through handles to find the new window
+6. **Title Assertion**: Verify the new window title is "New Window"
+7. **Window Cleanup**: Close the new window
+8. **Return to Original**: Switch back to the original window
+9. **Verification**: Confirm we're back to the original window
+
+**Window Handling Strategies Demonstrated**:
+- **Window Handle Management**: Storing and tracking original window handle
+- **WebDriverWait for Windows**: `numberOfWindowsToBe(2)` condition
+- **Window Iteration**: Finding new window by comparing handles
+- **Window Switching**: `driver.switchTo().window(handle)` for navigation
+- **Window Cleanup**: Proper resource management with `driver.close()`
+- **Assertion Testing**: JUnit 5 assertions for window title verification
+
+**Key Features**:
+- **Robust Window Detection**: Handles multiple windows safely
+- **Proper Resource Management**: Ensures windows are closed properly
+- **Assertion Validation**: Verifies expected window behavior
+- **Console Logging**: Detailed output for debugging and verification
+
 ### Base Test Class: `BaseTest`
 
 **Features**:
@@ -306,6 +345,8 @@ JAVA_HOME=C:\Program Files\Java\java-11
 - ✅ **Screenshot capture utility implemented**
 - ✅ **Beautiful HTML report generator with embedded screenshots**
 - ✅ **Step-by-step visual test documentation**
+- ✅ **Multiple browser windows/tabs handling implemented**
+- ✅ **Window switching and management strategies**
 - ✅ **All tests passing successfully**
 
 ## 🤝 Contributing
@@ -372,5 +413,5 @@ For questions or issues:
 **Maven Version**: 3.9.11  
 **Selenium Version**: 4.23.0  
 **WebDriverManager Version**: 5.6.3  
-**Test Status**: ✅ All Tests Passing  
+**Test Status**: ✅ All Tests Passing (2 Test Classes)  
 **Report Status**: 📊 Beautiful HTML Reports with Screenshots Generated
