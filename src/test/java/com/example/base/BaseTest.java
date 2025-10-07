@@ -13,12 +13,23 @@ import org.openqa.selenium.Alert;
 import org.openqa.selenium.NoAlertPresentException;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import io.github.bonigarcia.wdm.WebDriverManager;
+import com.example.utils.ScreenshotUtil;
+import com.example.utils.TestHelper;
 
 import java.time.Duration;
 
 public class BaseTest {
     protected WebDriver driver;
     protected WebDriverWait wait;
+    
+    // Screenshot configuration constants
+    private static final String SCREENSHOT_MODE_PROPERTY = "screenshot.mode";
+    private static final String FAILURE_ONLY_MODE = "failure-only";
+    private static final String ALL_STEPS_MODE = "all";
+    private static final String DEFAULT_MODE = FAILURE_ONLY_MODE; // Default to failure-only mode
+    
+    // Screenshot mode for current test
+    protected boolean useFailureOnlyScreenshots;
 
     protected WebDriver createDriver() {
         String browser = System.getProperty("browser", "chrome").toLowerCase();
@@ -124,6 +135,10 @@ public class BaseTest {
         }
         // Initialize WebDriverWait with 10 seconds timeout
         wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        
+        // Configure screenshot mode based on system property or default
+        configureScreenshotMode();
+        
         // Cerrar cualquier pop-up que pueda aparecer al iniciar
         closePopups();
     }
@@ -157,5 +172,65 @@ public class BaseTest {
      */
     public void closeAnyPopups() {
         closePopups();
+    }
+    
+    /**
+     * Configure screenshot mode based on system property or default
+     */
+    private void configureScreenshotMode() {
+        String screenshotMode = System.getProperty(SCREENSHOT_MODE_PROPERTY, DEFAULT_MODE);
+        useFailureOnlyScreenshots = FAILURE_ONLY_MODE.equalsIgnoreCase(screenshotMode);
+        
+        // Apply the configuration
+        TestHelper.setupScreenshotMode(useFailureOnlyScreenshots);
+        
+        System.out.println("📸 Screenshot mode: " + (useFailureOnlyScreenshots ? "FAILURE-ONLY" : "ALL-STEPS"));
+    }
+    
+    /**
+     * Override screenshot mode for specific tests
+     * @param failureOnly true for failure-only mode, false for all steps
+     */
+    protected void setScreenshotMode(boolean failureOnly) {
+        useFailureOnlyScreenshots = failureOnly;
+        TestHelper.setupScreenshotMode(failureOnly);
+        System.out.println("📸 Screenshot mode overridden to: " + (failureOnly ? "FAILURE-ONLY" : "ALL-STEPS"));
+    }
+    
+    /**
+     * Capture screenshot with current mode settings
+     * @param stepName Name of the step
+     * @return File path of the screenshot, or null if not captured
+     */
+    protected String captureScreenshot(String stepName) {
+        return TestHelper.captureScreenshot(driver, stepName);
+    }
+    
+    /**
+     * Handle test failure with screenshot capture
+     * @param stepName Name of the step that failed
+     * @param exception The exception that occurred
+     * @return File path of the failure screenshot
+     */
+    protected String handleTestFailure(String stepName, Exception exception) {
+        return TestHelper.handleTestFailure(driver, stepName, exception);
+    }
+    
+    /**
+     * Handle assertion failure with screenshot capture
+     * @param stepName Name of the step that failed
+     * @param assertionMessage The assertion message
+     * @return File path of the failure screenshot
+     */
+    protected String handleAssertionFailure(String stepName, String assertionMessage) {
+        return TestHelper.handleAssertionFailure(driver, stepName, assertionMessage);
+    }
+    
+    /**
+     * Get current screenshot mode
+     * @return true if in failure-only mode, false if capturing all screenshots
+     */
+    protected boolean isFailureOnlyMode() {
+        return useFailureOnlyScreenshots;
     }
 }

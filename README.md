@@ -65,6 +65,24 @@ Mod2-Proy02-Ejercicio2/
 
 - **Java 11** or higher
 - **Maven 3.9.11** or higher
+
+### Screenshot Configuration
+The project supports centralized screenshot configuration through system properties:
+
+**Default Mode**: Failure-only screenshots (recommended for CI/CD)
+```bash
+mvn test  # Uses failure-only mode by default
+```
+
+**All Steps Mode**: Capture screenshots at every step
+```bash
+mvn test "-Dscreenshot.mode=all"
+```
+
+**Failure-Only Mode**: Only capture screenshots when failures occur
+```bash
+mvn test "-Dscreenshot.mode=failure-only"
+```
 - **Chrome Browser** (for ChromeDriver tests)
 - **Internet connection** (for downloading dependencies and WebDriverManager)
 
@@ -372,6 +390,8 @@ xdg-open target/site/surefire-report.html
 - Automatic driver management (setup/teardown)
 - Window size configuration (1280x900)
 - Protected WebDriver and WebDriverWait instances for test classes
+- **Centralized Screenshot Configuration**: System property-based screenshot mode control
+- **Screenshot Helper Methods**: `captureScreenshot()`, `handleTestFailure()`, `handleAssertionFailure()`
 
 ## ⚙️ Configuration
 
