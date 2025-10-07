@@ -54,7 +54,8 @@ Mod2-Proy02-Ejercicio2/
                     │       └── WindowsAlertsFramesFormTest.java # Windows and alerts handling
                     ├── utils/
                     │   ├── ReportGenerator.java             # HTML report generator
-                    │   └── ScreenshotUtil.java              # Screenshot capture utility
+                    │   ├── ScreenshotUtil.java              # Screenshot capture utility
+                    │   └── TestHelper.java                  # Test utilities and failure handling
                     └── webtesting/                          # Future general web tests
 ```
 
@@ -101,6 +102,7 @@ mvn test -Dtest=WindowsAlertsFramesFormTest#testWindows
 mvn test -Dtest=WindowsAlertsFramesFormTest#testAlerts
 mvn test -Dtest=WindowsAlertsFramesFormTest#testFrames
 mvn test -Dtest=WindowsAlertsFramesFormTest#testFormAutomation
+mvn test -Dtest=WindowsAlertsFramesFormTest#testFailureOnlyScreenshots
 
 # Run all tests
 mvn test
@@ -338,6 +340,23 @@ xdg-open target/site/surefire-report.html
 - **Error Handling**: JavaScript fallback for click interception issues
 - **Form Validation**: Complete form submission workflow with confirmation
 - **Multiple Element Types**: Text inputs, radio buttons, checkboxes, dropdowns
+
+**Test Method**: `testFailureOnlyScreenshots()`
+
+**Test Steps**:
+1. Enable failure-only screenshot mode
+2. Navigate to form page (no screenshot captured)
+3. Fill form fields (no screenshot captured)
+4. Intentionally cause failure (screenshot captured)
+5. Continue after failure (screenshot captured)
+6. Reset to default mode
+
+**Failure-Only Screenshot Strategies Demonstrated**:
+- **Mode Control**: `ScreenshotUtil.setFailureOnlyMode(true/false)`
+- **Failure Marking**: `ScreenshotUtil.markFailure()` or `ScreenshotUtil.captureFailureScreenshot()`
+- **Conditional Capture**: Screenshots only captured when failures occur
+- **State Management**: Proper reset of failure state between tests
+- **Helper Integration**: `TestHelper` class for easier failure handling
 - **Context Management**: Proper iframe to main document switching
 - **Robust Validation**: Comprehensive content verification
 - **Error Handling**: Proper wait conditions and context management
@@ -492,6 +511,14 @@ For questions or issues:
 
 ## 🎯 Key Features Implemented
 
+### Enhanced Screenshot Management
+- **Failure-Only Mode**: Capture screenshots only when test failures occur
+- **Mode Control**: `ScreenshotUtil.setFailureOnlyMode(true/false)` for flexible screenshot behavior
+- **Failure Marking**: `ScreenshotUtil.markFailure()` and `ScreenshotUtil.captureFailureScreenshot()` methods
+- **State Management**: Automatic reset of failure state between tests
+- **TestHelper Integration**: Simplified failure handling with `TestHelper` class
+- **Conditional Capture**: Smart screenshot capture based on test state
+
 ### Advanced Wait Strategies
 - **Combined Conditions**: Using `ExpectedConditions.and()` to wait for multiple conditions simultaneously
 - **URL and Element Verification**: Waiting for both URL to contain "inventory" and element to be visible
@@ -553,5 +580,5 @@ For questions or issues:
 **Maven Version**: 3.9.11  
 **Selenium Version**: 4.23.0  
 **WebDriverManager Version**: 5.6.3  
-**Test Status**: ✅ All Tests Passing (5 Test Methods in 2 Test Classes)  
+**Test Status**: ✅ All Tests Passing (6 Test Methods in 2 Test Classes)  
 **Report Status**: 📊 Beautiful HTML Reports with Screenshots Generated

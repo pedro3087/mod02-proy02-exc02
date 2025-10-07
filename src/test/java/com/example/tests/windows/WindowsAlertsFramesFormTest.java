@@ -13,6 +13,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.example.base.BaseTest;
+import com.example.utils.ScreenshotUtil;
 
 /**
  * Test class for handling multiple browser windows/tabs and JavaScript alerts
@@ -237,5 +238,54 @@ public class WindowsAlertsFramesFormTest extends BaseTest {
         assertEquals("Received!", confirmationMessage.getText(), "Form submission confirmation should be 'Received!'");
         
         System.out.println("Form automation test completed successfully!");
+    }
+
+    /**
+     * Test to demonstrate failure-only screenshot mode
+     * This test intentionally fails to show how failure-only screenshots work
+     */
+    @Test
+    public void testFailureOnlyScreenshots() {
+        System.out.println("Starting failure-only screenshot demonstration test...");
+        
+        // Enable failure-only mode
+        ScreenshotUtil.setFailureOnlyMode(true);
+        ScreenshotUtil.resetStepCounter();
+        
+        driver.get("https://www.selenium.dev/selenium/web/web-form.html");
+        System.out.println("Navigated to form page");
+        
+        // This screenshot should NOT be captured (no failure yet)
+        ScreenshotUtil.captureScreenshot(driver, "01_Page_Loaded");
+        System.out.println("Screenshot 1 - Should NOT be captured (no failure yet)");
+        
+        // Fill some form fields
+        WebElement textInput = driver.findElement(By.name("my-text"));
+        textInput.clear();
+        textInput.sendKeys("Test Input");
+        System.out.println("Filled text input field");
+        
+        // This screenshot should NOT be captured (no failure yet)
+        ScreenshotUtil.captureScreenshot(driver, "02_Form_Filled");
+        System.out.println("Screenshot 2 - Should NOT be captured (no failure yet)");
+        
+        // Intentionally cause a failure by looking for non-existent element
+        try {
+            WebElement nonExistentElement = driver.findElement(By.id("this-element-does-not-exist"));
+            nonExistentElement.click();
+        } catch (Exception e) {
+            System.out.println("Expected failure occurred: " + e.getMessage());
+            // Mark failure and capture screenshot
+            ScreenshotUtil.captureFailureScreenshot(driver, "03_Element_Not_Found");
+            System.out.println("Screenshot 3 - SHOULD be captured (failure occurred)");
+        }
+        
+        // This screenshot should be captured (failure has occurred)
+        ScreenshotUtil.captureScreenshot(driver, "04_After_Failure");
+        System.out.println("Screenshot 4 - Should be captured (failure occurred)");
+        
+        // Reset for next test
+        ScreenshotUtil.setFailureOnlyMode(false);
+        System.out.println("Failure-only screenshot demonstration completed!");
     }
 }
