@@ -176,8 +176,14 @@ The `InventoryFlowTest` has been validated on multiple browsers:
 # Run test and generate custom HTML report with embedded screenshots
 mvn test -Dtest=InventoryFlowTest
 
+# Run specific test method (e.g., failure-only screenshot demonstration)
+mvn test -Dtest=WindowsAlertsFramesFormTest#testFailureOnlyScreenshots
+
 # Generate Maven Surefire report
 mvn surefire-report:report
+
+# Generate custom HTML report with latest screenshots
+java -cp "target/test-classes;target/classes" com.example.utils.ReportGenerator
 ```
 
 ### Custom HTML Report with Screenshots
@@ -185,11 +191,13 @@ The test automatically generates a beautiful HTML report with embedded screensho
 
 **Features:**
 - 🎨 **Modern Design**: Professional gradient background with responsive layout
-- 📸 **Embedded Screenshots**: All 9 test steps captured and embedded (Base64 encoded)
+- 📸 **Embedded Screenshots**: All test steps captured and embedded (Base64 encoded)
 - 📊 **Test Summary**: Statistics, execution time, and status information
 - 🔍 **Step Details**: Detailed descriptions for each test step
 - 📱 **Responsive**: Works on desktop and mobile devices
 - 🚀 **Self-contained**: No external file dependencies
+- 🧹 **Automatic Cleanup**: Removes old screenshots, keeping latest execution
+- ⚙️ **Standalone Generation**: Can be run independently with `java -cp` command
 
 ### Open Reports in Browser
 ```bash
@@ -362,22 +370,21 @@ xdg-open target/site/surefire-report.html
 **Test Method**: `testFailureOnlyScreenshots()`
 
 **Test Steps**:
-1. Enable failure-only screenshot mode
-2. Navigate to form page (no screenshot captured)
-3. Fill form fields (no screenshot captured)
-4. Intentionally cause failure (screenshot captured)
-5. Continue after failure (screenshot captured)
-6. Reset to default mode
+1. Navigate to form page (no screenshot captured - failure-only mode)
+2. Fill form fields (no screenshot captured - no failure yet)
+3. Intentionally cause failure by looking for non-existent element (screenshot captured)
+4. Continue after failure (screenshot captured - failure-only mode active)
+5. Demonstrate failure-only screenshot functionality
 
 **Failure-Only Screenshot Strategies Demonstrated**:
-- **Mode Control**: `ScreenshotUtil.setFailureOnlyMode(true/false)`
-- **Failure Marking**: `ScreenshotUtil.markFailure()` or `ScreenshotUtil.captureFailureScreenshot()`
+- **Centralized Configuration**: System property-based screenshot mode control
+- **Failure Detection**: Automatic screenshot capture when exceptions occur
 - **Conditional Capture**: Screenshots only captured when failures occur
-- **State Management**: Proper reset of failure state between tests
+- **State Management**: Proper failure state handling in BaseTest class
 - **Helper Integration**: `TestHelper` class for easier failure handling
-- **Context Management**: Proper iframe to main document switching
-- **Robust Validation**: Comprehensive content verification
-- **Error Handling**: Proper wait conditions and context management
+- **Exception Handling**: Try-catch blocks with proper screenshot capture
+- **Mode Demonstration**: Clear demonstration of failure-only vs all-steps modes
+- **Cleanup Management**: Automatic cleanup of old screenshots, keeping latest execution
 
 ### Base Test Class: `BaseTest`
 
@@ -506,6 +513,9 @@ JAVA_HOME=C:\Program Files\Java\java-11
 - ✅ **Radio button, checkbox, and dropdown handling implemented**
 - ✅ **Form submission and confirmation validation implemented**
 - ✅ **Organized package structure by functionality**
+- ✅ **Failure-only screenshot mode implemented and demonstrated**
+- ✅ **ReportGenerator main method added for standalone report generation**
+- ✅ **Automatic screenshot cleanup and execution organization**
 - ✅ **All tests passing successfully**
 
 ## 🤝 Contributing

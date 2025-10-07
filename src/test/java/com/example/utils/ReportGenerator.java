@@ -4,17 +4,23 @@ import java.io.*;
 import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.Base64;
 
 public class ReportGenerator {
     private static final String SCREENSHOT_DIR = "target/screenshots";
     private static final String REPORT_DIR = "target/reports";
     private static final String REPORT_FILE = "target/reports/test-report-with-screenshots.html";
+    private static final String EXECUTION_MARKER = "execution_";
     
     public static void generateReport() {
         try {
             // Create reports directory
             Files.createDirectories(Paths.get(REPORT_DIR));
+            
+            // Clean up old screenshots and organize by execution
+            organizeScreenshotsByExecution();
             
             // Generate HTML report
             String htmlContent = generateHtmlContent();
@@ -27,6 +33,202 @@ public class ReportGenerator {
         } catch (IOException e) {
             System.err.println("❌ Failed to generate report: " + e.getMessage());
         }
+    }
+    
+    /**
+     * Clean up all old screenshots before starting a new test execution
+     * This should be called at the beginning of test runs
+     */
+    public static void cleanAllOldScreenshots() {
+        try {
+            File screenshotDir = new File(SCREENSHOT_DIR);
+            if (!screenshotDir.exists()) {
+                return;
+            }
+            
+            File[] allScreenshots = screenshotDir.listFiles((dir, name) -> name.endsWith(".png"));
+            if (allScreenshots == null || allScreenshots.length == 0) {
+                return;
+            }
+            
+            int deletedCount = 0;
+            for (File screenshot : allScreenshots) {
+                if (screenshot.delete()) {
+                    deletedCount++;
+                }
+            }
+            
+            System.out.println("🧹 Cleaned up " + deletedCount + " old screenshots before new test execution");
+            
+        } catch (Exception e) {
+            System.err.println("⚠️ Warning: Failed to clean old screenshots: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Clean up old screenshots and organize by test execution
+     */
+    private static void organizeScreenshotsByExecution() throws IOException {
+        File screenshotDir = new File(SCREENSHOT_DIR);
+        if (!screenshotDir.exists()) {
+            return;
+        }
+        
+        // Get current execution timestamp
+        String currentExecution = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        
+        // Get all PNG files
+        File[] allScreenshots = screenshotDir.listFiles((dir, name) -> name.endsWith(".png"));
+        if (allScreenshots == null || allScreenshots.length == 0) {
+            return;
+        }
+        
+        // Group screenshots by test execution (based on timestamp in filename)
+        Map<String, List<File>> executionGroups = new HashMap<>();
+        
+        for (File screenshot : allScreenshots) {
+            String filename = screenshot.getName();
+            String executionId = extractExecutionId(filename);
+            executionGroups.computeIfAbsent(executionId, k -> new ArrayList<>()).add(screenshot);
+        }
+        
+        // Keep only the latest execution, delete others
+        String latestExecution = executionGroups.keySet().stream()
+            .max(String::compareTo)
+            .orElse(currentExecution);
+        
+        for (Map.Entry<String, List<File>> entry : executionGroups.entrySet()) {
+            if (!entry.getKey().equals(latestExecution)) {
+                // Delete old execution screenshots
+                for (File oldScreenshot : entry.getValue()) {
+                    oldScreenshot.delete();
+                }
+            }
+        }
+        
+        System.out.println("🧹 Cleaned up old screenshots, keeping latest execution: " + latestExecution);
+    }
+    
+    /**
+     * Extract execution ID from screenshot filename
+     */
+    private static String extractExecutionId(String filename) {
+        // Extract timestamp from filename (format: step_XX_name_YYYYMMDD_HHMMSS.png)
+        String[] parts = filename.split("_");
+        if (parts.length >= 4) {
+            return parts[parts.length - 2] + "_" + parts[parts.length - 1].replace(".png", "");
+        }
+        return "unknown";
+    }
+    
+    /**
+     * Data class to hold test execution statistics
+     */
+    private static class TestExecutionData {
+        int totalTests;
+        int failures;
+        int errors;
+        int totalScreenshots;
+        boolean hasFailures;
+        
+        TestExecutionData(int totalTests, int failures, int errors, int totalScreenshots) {
+            this.totalTests = totalTests;
+            this.failures = failures;
+            this.errors = errors;
+            this.totalScreenshots = totalScreenshots;
+            this.hasFailures = failures > 0 || errors > 0;
+        }
+    }
+    
+    /**
+     * Get test execution data from screenshots
+     */
+    private static TestExecutionData getTestExecutionData() {
+        File screenshotDir = new File(SCREENSHOT_DIR);
+        if (!screenshotDir.exists()) {
+            return new TestExecutionData(0, 0, 0, 0);
+        }
+        
+        File[] screenshots = screenshotDir.listFiles((dir, name) -> name.endsWith(".png"));
+        if (screenshots == null) {
+            return new TestExecutionData(0, 0, 0, 0);
+        }
+        
+        int totalScreenshots = screenshots.length;
+        int failures = 0;
+        int errors = 0;
+        
+        // Count failures and errors based on screenshot names
+        for (File screenshot : screenshots) {
+            String filename = screenshot.getName().toLowerCase();
+            if (filename.contains("failure")) {
+                failures++;
+            }
+        }
+        
+        // Estimate test count based on scenario grouping
+        Map<String, List<File>> scenarioGroups = groupScreenshotsByScenario();
+        int totalTests = scenarioGroups.size();
+        
+        return new TestExecutionData(totalTests, failures, errors, totalScreenshots);
+    }
+    
+    /**
+     * Group screenshots by test scenario
+     */
+    private static Map<String, List<File>> groupScreenshotsByScenario() {
+        File screenshotDir = new File(SCREENSHOT_DIR);
+        Map<String, List<File>> scenarioGroups = new LinkedHashMap<>();
+        
+        if (!screenshotDir.exists()) {
+            return scenarioGroups;
+        }
+        
+        File[] screenshots = screenshotDir.listFiles((dir, name) -> name.endsWith(".png"));
+        if (screenshots == null) {
+            return scenarioGroups;
+        }
+        
+        // Sort screenshots by filename to maintain order
+        Arrays.sort(screenshots);
+        
+        for (File screenshot : screenshots) {
+            String scenarioName = getScenarioName(screenshot.getName());
+            scenarioGroups.computeIfAbsent(scenarioName, k -> new ArrayList<>()).add(screenshot);
+        }
+        
+        return scenarioGroups;
+    }
+    
+    /**
+     * Extract scenario name from screenshot filename
+     */
+    private static String getScenarioName(String filename) {
+        // Extract test scenario from filename
+        if (filename.contains("Inventory_Flow")) {
+            return "E-commerce Inventory Flow Test";
+        } else if (filename.contains("testWindows")) {
+            return "Window Handling Test";
+        } else if (filename.contains("testAlerts")) {
+            return "JavaScript Alerts Test";
+        } else if (filename.contains("testFrames")) {
+            return "iFrame Handling Test";
+        } else if (filename.contains("testFormAutomation")) {
+            return "Form Automation Test";
+        } else if (filename.contains("testFailureOnlyScreenshots")) {
+            return "Failure-Only Screenshot Demo";
+        } else if (filename.contains("FAILURE_")) {
+            return "Test Failure Scenarios";
+        }
+        return "Unknown Test Scenario";
+    }
+    
+    /**
+     * Check if scenario has failures
+     */
+    private static boolean hasFailureInScenario(List<File> screenshots) {
+        return screenshots.stream()
+            .anyMatch(file -> file.getName().toLowerCase().contains("failure"));
     }
     
     private static String generateHtmlContent() {
@@ -45,58 +247,75 @@ public class ReportGenerator {
         html.append("</head>\n");
         html.append("<body>\n");
         
+        // Get test execution data
+        TestExecutionData executionData = getTestExecutionData();
+        
         // Header
         html.append("    <div class=\"header\">\n");
-        html.append("        <h1>🧪 Inventory Flow Test Report</h1>\n");
+        html.append("        <h1>🧪 Selenium Test Execution Report</h1>\n");
         html.append("        <p class=\"timestamp\">Generated on: ").append(timestamp).append("</p>\n");
-        html.append("        <div class=\"status-badge success\">✅ ALL TESTS PASSED</div>\n");
+        html.append("        <div class=\"status-badge ").append(executionData.hasFailures ? "failure" : "success").append("\">")
+             .append(executionData.hasFailures ? "❌ SOME TESTS FAILED" : "✅ ALL TESTS PASSED").append("</div>\n");
         html.append("    </div>\n");
         
         // Summary
         html.append("    <div class=\"summary\">\n");
         html.append("        <h2>📊 Test Summary</h2>\n");
         html.append("        <div class=\"stats\">\n");
-        html.append("            <div class=\"stat\"><span class=\"number\">1</span><span class=\"label\">Tests Run</span></div>\n");
-        html.append("            <div class=\"stat\"><span class=\"number\">0</span><span class=\"label\">Failures</span></div>\n");
-        html.append("            <div class=\"stat\"><span class=\"number\">0</span><span class=\"label\">Errors</span></div>\n");
-        html.append("            <div class=\"stat\"><span class=\"number\">9</span><span class=\"label\">Screenshots</span></div>\n");
+        html.append("            <div class=\"stat\"><span class=\"number\">").append(executionData.totalTests).append("</span><span class=\"label\">Tests Run</span></div>\n");
+        html.append("            <div class=\"stat\"><span class=\"number\">").append(executionData.failures).append("</span><span class=\"label\">Failures</span></div>\n");
+        html.append("            <div class=\"stat\"><span class=\"number\">").append(executionData.errors).append("</span><span class=\"label\">Errors</span></div>\n");
+        html.append("            <div class=\"stat\"><span class=\"number\">").append(executionData.totalScreenshots).append("</span><span class=\"label\">Screenshots</span></div>\n");
         html.append("        </div>\n");
         html.append("    </div>\n");
         
-        // Test Steps
-        html.append("    <div class=\"test-steps\">\n");
-        html.append("        <h2>🔍 Test Execution Steps</h2>\n");
+        // Test Scenarios
+        html.append("    <div class=\"test-scenarios\">\n");
+        html.append("        <h2>🔍 Test Scenarios</h2>\n");
         
-        // Get all screenshot files
-        File screenshotDir = new File(SCREENSHOT_DIR);
-        if (screenshotDir.exists()) {
-            File[] screenshots = screenshotDir.listFiles((dir, name) -> name.endsWith(".png"));
-            if (screenshots != null) {
-                // Sort by filename to maintain order
-                java.util.Arrays.sort(screenshots);
+        // Group screenshots by test scenario
+        Map<String, List<File>> scenarioGroups = groupScreenshotsByScenario();
+        
+        int scenarioNumber = 1;
+        for (Map.Entry<String, List<File>> scenario : scenarioGroups.entrySet()) {
+            String scenarioName = scenario.getKey();
+            List<File> screenshots = scenario.getValue();
+            
+            html.append("        <div class=\"scenario\">\n");
+            html.append("            <div class=\"scenario-header\">\n");
+            html.append("                <h3>Scenario ").append(scenarioNumber).append(": ").append(scenarioName).append("</h3>\n");
+            html.append("                <span class=\"scenario-status ").append(hasFailureInScenario(screenshots) ? "failure" : "success").append("\">")
+                 .append(hasFailureInScenario(screenshots) ? "❌ FAILED" : "✅ PASSED").append("</span>\n");
+            html.append("            </div>\n");
+            html.append("            <div class=\"scenario-steps\">\n");
+            
+            for (int i = 0; i < screenshots.size(); i++) {
+                File screenshot = screenshots.get(i);
+                String stepNumber = String.format("%02d", i + 1);
+                String stepName = getStepName(screenshot.getName());
+                String base64Image = encodeImageToBase64(screenshot);
+                boolean isFailure = stepName.toLowerCase().contains("failure");
                 
-                for (int i = 0; i < screenshots.length; i++) {
-                    File screenshot = screenshots[i];
-                    String stepNumber = String.format("%02d", i + 1);
-                    String stepName = getStepName(screenshot.getName());
-                    String base64Image = encodeImageToBase64(screenshot);
-                    
-                    html.append("        <div class=\"step\">\n");
-                    html.append("            <div class=\"step-header\">\n");
-                    html.append("                <h3>Step ").append(stepNumber).append(": ").append(stepName).append("</h3>\n");
-                    html.append("                <span class=\"step-status success\">✅ PASSED</span>\n");
-                    html.append("            </div>\n");
-                    html.append("            <div class=\"step-content\">\n");
-                    html.append("                <div class=\"screenshot-container\">\n");
-                    html.append("                    <img src=\"data:image/png;base64,").append(base64Image).append("\" alt=\"Step ").append(stepNumber).append(" Screenshot\" class=\"screenshot\">\n");
-                    html.append("                </div>\n");
-                    html.append("                <div class=\"step-description\">\n");
-                    html.append("                    <p>").append(getStepDescription(stepName)).append("</p>\n");
-                    html.append("                </div>\n");
-                    html.append("            </div>\n");
-                    html.append("        </div>\n");
-                }
+                html.append("                <div class=\"step ").append(isFailure ? "failure-step" : "").append("\">\n");
+                html.append("                    <div class=\"step-header\">\n");
+                html.append("                        <h4>Step ").append(stepNumber).append(": ").append(stepName).append("</h4>\n");
+                html.append("                        <span class=\"step-status ").append(isFailure ? "failure" : "success").append("\">")
+                     .append(isFailure ? "❌ FAILED" : "✅ PASSED").append("</span>\n");
+                html.append("                    </div>\n");
+                html.append("                    <div class=\"step-content\">\n");
+                html.append("                        <div class=\"screenshot-container\">\n");
+                html.append("                            <img src=\"data:image/png;base64,").append(base64Image).append("\" alt=\"Step ").append(stepNumber).append(" Screenshot\" class=\"screenshot\">\n");
+                html.append("                        </div>\n");
+                html.append("                        <div class=\"step-description\">\n");
+                html.append("                            <p>").append(getStepDescription(stepName, scenarioName)).append("</p>\n");
+                html.append("                        </div>\n");
+                html.append("                    </div>\n");
+                html.append("                </div>\n");
             }
+            
+            html.append("            </div>\n");
+            html.append("        </div>\n");
+            scenarioNumber++;
         }
         
         html.append("    </div>\n");
@@ -158,6 +377,74 @@ public class ReportGenerator {
             
             .status-badge.success {
                 background: #27ae60;
+                color: white;
+            }
+            
+            .status-badge.failure {
+                background: #e74c3c;
+                color: white;
+            }
+            
+            .test-scenarios {
+                background: rgba(255, 255, 255, 0.95);
+                margin: 0 2rem 2rem 2rem;
+                padding: 2rem;
+                border-radius: 15px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+            
+            .scenario {
+                margin-bottom: 2rem;
+                border: 1px solid #e0e0e0;
+                border-radius: 10px;
+                overflow: hidden;
+            }
+            
+            .scenario-header {
+                background: linear-gradient(135deg, #3498db, #2980b9);
+                color: white;
+                padding: 1rem 1.5rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .scenario-header h3 {
+                margin: 0;
+                font-size: 1.3rem;
+            }
+            
+            .scenario-status {
+                padding: 0.3rem 0.8rem;
+                border-radius: 15px;
+                font-size: 0.9rem;
+                font-weight: bold;
+            }
+            
+            .scenario-status.success {
+                background: rgba(39, 174, 96, 0.2);
+                color: #27ae60;
+                border: 1px solid #27ae60;
+            }
+            
+            .scenario-status.failure {
+                background: rgba(231, 76, 60, 0.2);
+                color: #e74c3c;
+                border: 1px solid #e74c3c;
+            }
+            
+            .scenario-steps {
+                padding: 1rem;
+                background: #f8f9fa;
+            }
+            
+            .failure-step {
+                border-left: 4px solid #e74c3c;
+                background: #fdf2f2;
+            }
+            
+            .step-status.failure {
+                background: #e74c3c;
                 color: white;
             }
             
@@ -322,7 +609,32 @@ public class ReportGenerator {
         return "Unknown Step";
     }
     
-    private static String getStepDescription(String stepName) {
+    private static String getStepDescription(String stepName, String scenarioName) {
+        // Handle failure scenarios
+        if (stepName.toLowerCase().contains("failure")) {
+            return "Test failure occurred at this step. Screenshot captured for debugging purposes.";
+        }
+        
+        // Handle specific scenarios
+        switch (scenarioName) {
+            case "E-commerce Inventory Flow Test":
+                return getInventoryFlowDescription(stepName);
+            case "Window Handling Test":
+                return getWindowHandlingDescription(stepName);
+            case "JavaScript Alerts Test":
+                return getAlertsDescription(stepName);
+            case "iFrame Handling Test":
+                return getFramesDescription(stepName);
+            case "Form Automation Test":
+                return getFormAutomationDescription(stepName);
+            case "Failure-Only Screenshot Demo":
+                return getFailureDemoDescription(stepName);
+            default:
+                return "Test step executed successfully with screenshot captured.";
+        }
+    }
+    
+    private static String getInventoryFlowDescription(String stepName) {
         switch (stepName.toLowerCase()) {
             case "01 login page":
                 return "Initial login page loaded successfully. User can see the login form with username and password fields.";
@@ -343,8 +655,37 @@ public class ReportGenerator {
             case "09 final cart verification":
                 return "Final verification: Cart badge still shows '1', confirming cart state persistence across navigation.";
             default:
-                return "Test step executed successfully with screenshot captured.";
+                return "E-commerce flow test step executed successfully.";
         }
+    }
+    
+    private static String getWindowHandlingDescription(String stepName) {
+        return "Window handling test step: " + stepName.replace("_", " ").toLowerCase();
+    }
+    
+    private static String getAlertsDescription(String stepName) {
+        return "JavaScript alerts test step: " + stepName.replace("_", " ").toLowerCase();
+    }
+    
+    private static String getFramesDescription(String stepName) {
+        return "iFrame handling test step: " + stepName.replace("_", " ").toLowerCase();
+    }
+    
+    private static String getFormAutomationDescription(String stepName) {
+        return "Form automation test step: " + stepName.replace("_", " ").toLowerCase();
+    }
+    
+    private static String getFailureDemoDescription(String stepName) {
+        if (stepName.toLowerCase().contains("page loaded")) {
+            return "Form page loaded successfully. No screenshot captured (failure-only mode).";
+        } else if (stepName.toLowerCase().contains("form filled")) {
+            return "Form fields filled successfully. No screenshot captured (failure-only mode).";
+        } else if (stepName.toLowerCase().contains("element not found")) {
+            return "Intentionally triggered failure by looking for non-existent element. Screenshot captured.";
+        } else if (stepName.toLowerCase().contains("after failure")) {
+            return "Screenshot captured after failure occurred (failure-only mode active).";
+        }
+        return "Failure demonstration test step.";
     }
     
     private static String encodeImageToBase64(File imageFile) {
@@ -355,5 +696,14 @@ public class ReportGenerator {
             System.err.println("Failed to encode image: " + e.getMessage());
             return "";
         }
+    }
+    
+    /**
+     * Main method to generate report from command line
+     */
+    public static void main(String[] args) {
+        System.out.println("🚀 Starting report generation...");
+        generateReport();
+        System.out.println("✅ Report generation completed!");
     }
 }

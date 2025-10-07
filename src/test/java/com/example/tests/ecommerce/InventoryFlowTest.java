@@ -14,6 +14,9 @@ public class InventoryFlowTest extends BaseTest {
     @Test
     @DisplayName("Inventory flow test with centralized screenshot configuration")
     void testInventoryFlow() {
+        // Enable failure-only screenshot mode
+        TestHelper.setupScreenshotMode(true);
+        
         try {
             driver.get("https://www.saucedemo.com/");
             System.out.println("✅ Navigated to login page");

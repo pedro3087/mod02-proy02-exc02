@@ -16,7 +16,9 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 import com.example.utils.ScreenshotUtil;
 import com.example.utils.TestHelper;
 
+import java.io.File;
 import java.time.Duration;
+import java.util.*;
 
 public class BaseTest {
     protected WebDriver driver;
@@ -136,6 +138,9 @@ public class BaseTest {
         // Initialize WebDriverWait with 10 seconds timeout
         wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         
+        // Clean up old screenshots before starting new test execution
+        cleanOldScreenshots();
+        
         // Configure screenshot mode based on system property or default
         configureScreenshotMode();
         
@@ -232,5 +237,72 @@ public class BaseTest {
      */
     protected boolean isFailureOnlyMode() {
         return useFailureOnlyScreenshots;
+    }
+    
+    /**
+     * Clean up old screenshots before starting new test execution
+     * This ensures only the latest execution screenshots are kept
+     */
+    private void cleanOldScreenshots() {
+        try {
+            File screenshotDir = new File("target/screenshots");
+            if (!screenshotDir.exists()) {
+                return;
+            }
+            
+            File[] allScreenshots = screenshotDir.listFiles((dir, name) -> name.endsWith(".png"));
+            if (allScreenshots == null || allScreenshots.length == 0) {
+                return;
+            }
+            
+            // Get current execution timestamp
+            String currentExecution = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            
+            // Group screenshots by execution (based on timestamp in filename)
+            Map<String, List<File>> executionGroups = new HashMap<>();
+            
+            for (File screenshot : allScreenshots) {
+                String filename = screenshot.getName();
+                String executionId = extractExecutionId(filename);
+                executionGroups.computeIfAbsent(executionId, k -> new ArrayList<>()).add(screenshot);
+            }
+            
+            // Keep only the latest execution, delete others
+            String latestExecution = executionGroups.keySet().stream()
+                .max(String::compareTo)
+                .orElse(currentExecution);
+            
+            int deletedCount = 0;
+            for (Map.Entry<String, List<File>> entry : executionGroups.entrySet()) {
+                if (!entry.getKey().equals(latestExecution)) {
+                    // Delete old execution screenshots
+                    for (File oldScreenshot : entry.getValue()) {
+                        if (oldScreenshot.delete()) {
+                            deletedCount++;
+                        }
+                    }
+                }
+            }
+            
+            if (deletedCount > 0) {
+                System.out.println("🧹 Cleaned up " + deletedCount + " old screenshots, keeping latest execution: " + latestExecution);
+            }
+            
+        } catch (Exception e) {
+            System.err.println("⚠️ Warning: Failed to clean old screenshots: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Extract execution ID from screenshot filename
+     */
+    private String extractExecutionId(String filename) {
+        // Extract timestamp from filename (format: step_XX_name_YYYYMMDD_HHMMSS.png)
+        String[] parts = filename.split("_");
+        if (parts.length >= 4) {
+            return parts[parts.length - 2] + "_" + parts[parts.length - 1].replace(".png", "");
+        }
+        return "unknown";
     }
 }
