@@ -19,6 +19,10 @@ This project contains automated tests for web application testing using Selenium
 - **Window switching and management strategies**
 - **JavaScript alerts handling (Alert, Confirm, Prompt)**
 - **iFrame handling and interaction**
+- **Smart failure handling with automatic screenshot capture**
+- **JUnit 5 TestExecutionListener for centralized failure management**
+- **Declarative test step execution with automatic error handling**
+- **Test result tracking and comprehensive reporting**
 - **Organized package structure by functionality**
 
 ## 🛠️ Technology Stack
@@ -46,15 +50,19 @@ Mod2-Proy02-Ejercicio2/
             └── com/
                 └── example/
                     ├── base/
-                    │   └── BaseTest.java                    # Base test class with WebDriverManager & WebDriverWait
+                    │   ├── SmartBaseTest.java               # Consolidated base test class with WebDriver setup & smart failure handling
+                    │   ├── TestResultTracker.java           # Centralized test execution tracking
+                    │   └── SmartTestExecutionListener.java  # JUnit 5 lifecycle hooks for failure handling
                     ├── tests/
                     │   ├── ecommerce/
                     │   │   └── InventoryFlowTest.java       # E-commerce flow testing
                     │   └── windows/
-                    │       └── WindowsAlertsFramesFormTest.java # Windows and alerts handling
+                    │       ├── WindowsAlertsFramesFormTest.java # Windows and alerts handling
+                    │       └── SmartWindowsAlertsFramesFormTest.java # Smart failure handling example
                     ├── utils/
-                    │   ├── ReportGenerator.java             # HTML report generator
+                    │   ├── ReportGenerator.java             # HTML report generator with execution-based cleanup
                     │   ├── ScreenshotUtil.java              # Screenshot capture utility
+                    │   ├── ExecutionIdManager.java          # Smart execution tracking and cleanup
                     │   └── TestHelper.java                  # Test utilities and failure handling
                     └── webtesting/                          # Future general web tests
 ```
@@ -169,6 +177,150 @@ The `InventoryFlowTest` has been validated on multiple browsers:
 - **CI/CD**: Use Firefox for reliable cross-browser testing
 - **Production**: Test on all supported browsers
 
+## 🧠 Smart Failure Handling & Enhanced Reporting
+
+### Overview
+The project now includes a comprehensive smart failure handling system that eliminates the need for manual failure handling in each test case. This system provides automatic error detection, screenshot capture, and centralized reporting with intelligent cleanup and execution tracking.
+
+### Key Components
+
+#### 1. **SmartBaseTest** - Consolidated Base Test Class
+- **WebDriver setup and management** with multi-browser support
+- **WebDriverWait integration** with configurable timeouts
+- **Declarative step execution** with automatic failure handling
+- **Safe element interactions** with built-in error handling
+- **Smart navigation** with failure recovery
+- **Automatic screenshot capture** on failures
+- **Test result tracking** integration
+- **Execution ID management** for intelligent screenshot cleanup
+
+#### 2. **TestResultTracker** - Centralized Test State Management
+- **Thread-safe** test execution tracking
+- **Automatic failure recording** with step names and exceptions
+- **Screenshot counting** and execution time tracking
+- **Comprehensive reporting** with test summaries
+
+#### 3. **SmartTestExecutionListener** - JUnit 5 Lifecycle Hooks
+- **Automatic test lifecycle management** (before/after each test)
+- **Centralized failure handling** with automatic screenshot capture
+- **Test suite reporting** with execution summaries
+- **Automatic report generation** after each test class
+
+#### 4. **ExecutionIdManager** - Smart Execution Tracking
+- **Unique execution identification** for each test run
+- **Intelligent screenshot cleanup** preserving only current execution
+- **Execution-based organization** of test artifacts
+- **Automatic cleanup** of previous test run screenshots
+
+### Usage Examples
+
+#### **Simple Step Execution**
+```java
+// OLD WAY - Manual handling in each test
+try {
+    WebElement element = driver.findElement(By.id("element"));
+    element.click();
+} catch (Exception e) {
+    handleTestFailure("Click_Element", e);
+    throw e;
+}
+
+// NEW WAY - Automatic handling
+safeElementInteraction("Click_Element", 
+    () -> driver.findElement(By.id("element")),
+    WebElement::click);
+```
+
+#### **Declarative Test Steps**
+```java
+// Navigate with automatic error handling
+safeNavigate("Navigate_To_Login", "https://example.com/login");
+
+// Element interaction with automatic error handling
+safeElementInteraction("Click_Login_Button", 
+    () -> driver.findElement(By.id("login-btn")),
+    WebElement::click);
+
+// Assertions with automatic error handling
+safeAssert("Verify_Title", "page title is correct", () -> {
+    assertEquals("Expected Title", driver.getTitle());
+});
+
+// Wait operations with automatic error handling
+WebElement element = safeWait("Wait_For_Element", "element to be visible", 
+    wait -> wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("element")));
+```
+
+#### **Custom Step Execution**
+```java
+executeStep("Custom_Operation", "Performing custom operation", () -> {
+    // Your custom code here
+    // Automatic error handling and screenshot capture
+    return result;
+});
+```
+
+### Running Smart Tests
+
+#### **Run Smart Test Class**
+```bash
+# Run smart failure handling example
+mvn test -Dtest=SmartWindowsAlertsFramesFormTest
+
+# Run specific smart test method
+mvn test -Dtest=SmartWindowsAlertsFramesFormTest#testWindows
+mvn test -Dtest=SmartWindowsAlertsFramesFormTest#testAlerts
+```
+
+#### **Smart Test Features**
+- **Automatic Error Handling**: No manual try-catch blocks needed
+- **Step-by-Step Logging**: Clear visibility into test execution
+- **Automatic Screenshot Capture**: Screenshots captured on failures
+- **Test Result Tracking**: Comprehensive execution statistics
+- **Automatic Report Generation**: Reports generated after each test class
+
+### Benefits
+
+#### ✅ **No More Manual Failure Handling**
+- Eliminates repetitive try-catch blocks
+- Centralized error handling logic
+- Consistent failure management across all tests
+
+#### ✅ **Automatic Screenshot Capture**
+- Failure-only mode: Screenshots only captured on failures
+- Automatic step naming: Each step gets a descriptive name
+- Centralized tracking: All screenshots tracked and counted
+
+#### ✅ **Intelligent Screenshot Management**
+- **Execution-based cleanup**: Only keeps screenshots from current test run
+- **Automatic cleanup**: Removes screenshots from previous test runs
+- **Smart organization**: Screenshots organized by execution ID
+- **No manual cleanup**: System automatically manages screenshot lifecycle
+
+#### ✅ **Comprehensive Test Reporting**
+```
+📊 Test Execution Summary:
+================================================================================
+Total Tests: 6
+Failed Tests: 2
+Passed Tests: 4
+Total Screenshots: 2
+================================================================================
+Failure-Only Screenshot Demo             | ❌ FAILED | 8555ms | 1 screenshots | Step: SmartWindowsAlertsFramesFormTest_testFailureOnlyScreenshots_NoSuchElementException_Failure | Exception: NoSuchElementException                             
+iFrame Handling Test                     | ✅ PASSED | 3824ms | 0 screenshots    
+Test Timeout Failure Scenario            | ❌ FAILED | 12367ms | 1 screenshots | Step: SmartWindowsAlertsFramesFormTest_testTimeoutFailure_TimeoutException_Failure | Exception: TimeoutException                                                
+JavaScript Alerts Test                   | ✅ PASSED | 3795ms | 0 screenshots    
+Window Handling Test                     | ✅ PASSED | 3784ms | 0 screenshots    
+Form Automation Test                     | ✅ PASSED | 4902ms | 0 screenshots    
+```
+
+#### ✅ **Smart Step Execution**
+- Descriptive logging: Each step shows what it's doing
+- Automatic failure detection: Exceptions caught and handled
+- Step-by-step tracking: Clear visibility into test execution
+- Automatic cleanup: Old screenshots cleaned up automatically
+- **Multiple failure accumulation**: Both failures from same test class preserved
+
 ## 📊 Test Reports
 
 ### Generate Beautiful HTML Report with Screenshots
@@ -257,6 +409,42 @@ xdg-open target/site/surefire-report.html
 - **Element Clickability Wait**: `elementToBeClickable()` before interaction
 - **Stale Element Handling**: Re-finding elements after DOM updates
 - **Navigation Wait**: Waiting for page transitions and element visibility
+
+### Test Class: `SmartWindowsAlertsFramesFormTest` ⭐ **NEW - Smart Failure Handling**
+
+**Enhanced Test Class**: Demonstrates the new smart failure handling system with automatic error detection, screenshot capture, and centralized reporting.
+
+**Key Features**:
+- **Declarative Step Execution**: Each test step is clearly defined with automatic error handling
+- **Safe Element Interactions**: Built-in error handling for all element interactions
+- **Automatic Screenshot Capture**: Screenshots captured automatically on failures
+- **Test Result Tracking**: Comprehensive execution statistics and reporting
+- **No Manual Try-Catch**: Eliminates the need for manual error handling
+- **Multiple Failure Accumulation**: Both failures from same test class preserved in reports
+- **Intelligent Cleanup**: Automatic cleanup of previous test run screenshots
+
+**Test Methods**:
+- `testWindows()` - Smart window handling with automatic error detection
+- `testAlerts()` - Smart alert handling with declarative step execution
+- `testFrames()` - Smart iframe interaction with automatic error handling
+- `testFormAutomation()` - Smart form automation with safe element interactions
+- `testFailureOnlyScreenshots()` - Smart failure demonstration with automatic screenshot capture
+- `testTimeoutFailure()` - Smart timeout failure demonstration with automatic error handling
+
+**Smart Step Execution Example**:
+```java
+// Navigate with automatic error handling
+safeNavigate("Navigate_To_Windows_Page", "https://the-internet.herokuapp.com/windows");
+
+// Element interaction with automatic error handling
+safeElementInteraction("Click_New_Window_Link", 
+    () -> driver.findElement(By.linkText("Click Here")),
+    WebElement::click);
+
+// Wait operations with automatic error handling
+safeWait("Wait_For_New_Window", "new window to open", 
+    wait -> wait.until(ExpectedConditions.numberOfWindowsToBe(2)));
+```
 
 ### Test Class: `WindowsAlertsFramesFormTest`
 
@@ -380,18 +568,21 @@ xdg-open target/site/surefire-report.html
 - **Centralized Configuration**: System property-based screenshot mode control
 - **Failure Detection**: Automatic screenshot capture when exceptions occur
 - **Conditional Capture**: Screenshots only captured when failures occur
-- **State Management**: Proper failure state handling in BaseTest class
+- **State Management**: Proper failure state handling in SmartBaseTest class
 - **Helper Integration**: `TestHelper` class for easier failure handling
 - **Exception Handling**: Try-catch blocks with proper screenshot capture
 - **Mode Demonstration**: Clear demonstration of failure-only vs all-steps modes
 - **Cleanup Management**: Automatic cleanup of old screenshots, keeping latest execution
 
-### Base Test Class: `BaseTest`
+### Base Test Class: `SmartBaseTest` (Consolidated)
 
 **Features**:
 - **WebDriverManager Integration**: Automatic ChromeDriver management
 - **WebDriverWait Support**: 10-second timeout for explicit waits
-- Multi-browser support (Chrome, Firefox, Edge)
+- **Multi-browser support** (Chrome, Firefox, Edge)
+- **Smart failure handling** with automatic screenshot capture
+- **Execution ID management** for intelligent screenshot cleanup
+- **Declarative step execution** with built-in error handling
 - Headless mode capability
 - Configurable browser selection via system properties
 - Automatic driver management (setup/teardown)
@@ -516,7 +707,40 @@ JAVA_HOME=C:\Program Files\Java\java-11
 - ✅ **Failure-only screenshot mode implemented and demonstrated**
 - ✅ **ReportGenerator main method added for standalone report generation**
 - ✅ **Automatic screenshot cleanup and execution organization**
+- ✅ **Smart failure handling system implemented**
+- ✅ **JUnit 5 TestExecutionListener for centralized failure management**
+- ✅ **Declarative test step execution with automatic error handling**
+- ✅ **TestResultTracker for comprehensive test execution tracking**
+- ✅ **SmartBaseTest with consolidated WebDriver setup and enhanced failure handling capabilities**
+- ✅ **Automatic screenshot capture and test result reporting**
+- ✅ **ExecutionIdManager for intelligent execution tracking and cleanup**
+- ✅ **Multiple failure accumulation in test reports**
+- ✅ **Intelligent screenshot cleanup preserving only current execution**
 - ✅ **All tests passing successfully**
+- ✅ **Consolidated base test classes for simplified architecture**
+
+## 🏗️ Architecture Improvements
+
+### Base Test Class Consolidation
+The project has been refactored to use a single, consolidated base test class:
+
+**Before:**
+- `BaseTest.java` - Basic WebDriver setup and utilities
+- `SmartBaseTest.java` - Extended BaseTest with smart failure handling
+- Mixed usage across test classes causing potential conflicts
+
+**After:**
+- **Single `SmartBaseTest.java`** - All functionality consolidated
+- **Consistent inheritance** - All test classes extend SmartBaseTest
+- **No conflicts** - Single source of truth for test infrastructure
+- **Simplified maintenance** - One place to manage all test functionality
+
+**Benefits:**
+- ✅ Eliminated confusion about which base class to use
+- ✅ Prevented conflicts between duplicate functionality
+- ✅ Simplified maintenance and updates
+- ✅ Consistent behavior across all test classes
+- ✅ Clean, single inheritance hierarchy
 
 ## 🤝 Contributing
 
@@ -597,6 +821,18 @@ For questions or issues:
 - **Cross-Platform**: Works on Windows, macOS, and Linux
 - **WebDriverWait Support**: Built-in 10-second timeout for explicit waits
 
+### Smart Failure Handling
+- **Automatic Error Detection**: No manual try-catch blocks needed
+- **Declarative Step Execution**: Clear, readable test steps with automatic error handling
+- **Centralized Failure Management**: JUnit 5 TestExecutionListener for consistent error handling
+- **Test Result Tracking**: Comprehensive execution statistics and reporting
+- **Automatic Screenshot Capture**: Screenshots captured automatically on failures
+- **Safe Element Interactions**: Built-in error handling for all element operations
+- **Smart Navigation**: Automatic error handling for page navigation
+- **Test Lifecycle Management**: Automatic test setup, execution, and cleanup
+- **Multiple Failure Accumulation**: Both failures from same test class preserved in reports
+- **Intelligent Screenshot Management**: Execution-based cleanup preserving only current test run
+
 ### Package Organization
 - **Functional Structure**: Organized by test type and functionality
 - **Clear Separation**: Base classes, test classes, and utilities in separate packages
@@ -610,5 +846,8 @@ For questions or issues:
 **Maven Version**: 3.9.11  
 **Selenium Version**: 4.23.0  
 **WebDriverManager Version**: 5.6.3  
-**Test Status**: ✅ All Tests Passing (6 Test Methods in 2 Test Classes)  
-**Report Status**: 📊 Beautiful HTML Reports with Screenshots Generated
+**Test Status**: ✅ All Tests Passing (12 Test Methods in 3 Test Classes)  
+**Report Status**: 📊 Beautiful HTML Reports with Screenshots Generated  
+**Smart Failure Handling**: 🧠 Automatic Error Detection, Screenshot Capture, and Intelligent Cleanup  
+**Execution Tracking**: 🔄 Smart Execution ID Management with Automatic Cleanup
+lml

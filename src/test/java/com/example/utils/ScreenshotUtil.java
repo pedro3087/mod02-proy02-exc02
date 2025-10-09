@@ -8,8 +8,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 public class ScreenshotUtil {
     private static final String SCREENSHOT_DIR = "target/screenshots";
@@ -59,9 +57,9 @@ public class ScreenshotUtil {
                 Files.createDirectories(screenshotPath);
             }
             
-            // Generate filename with timestamp and step name
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            String filename = String.format("step_%02d_%s_%s.png", stepCounter++, stepName.replaceAll("[^a-zA-Z0-9]", "_"), timestamp);
+            // Generate filename with execution ID and step name
+            String executionId = ExecutionIdManager.getCurrentExecutionId();
+            String filename = String.format("step_%02d_%s_%s.png", stepCounter++, stepName.replaceAll("[^a-zA-Z0-9]", "_"), executionId);
             String filepath = SCREENSHOT_DIR + "/" + filename;
             
             // Capture screenshot

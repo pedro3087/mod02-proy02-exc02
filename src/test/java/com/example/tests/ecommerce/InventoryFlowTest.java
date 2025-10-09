@@ -7,10 +7,11 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import java.time.Duration;
-import com.example.base.BaseTest;
+import com.example.base.SmartBaseTest;
 import com.example.utils.ReportGenerator;
+import com.example.utils.TestHelper;
 
-public class InventoryFlowTest extends BaseTest {
+public class InventoryFlowTest extends SmartBaseTest {
     @Test
     @DisplayName("Inventory flow test with centralized screenshot configuration")
     void testInventoryFlow() {

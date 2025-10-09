@@ -2,7 +2,9 @@ package com.example.base;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
@@ -15,12 +17,23 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import com.example.utils.ScreenshotUtil;
 import com.example.utils.TestHelper;
+import com.example.utils.ExecutionIdManager;
+import com.example.utils.ReportGenerator;
 
 import java.io.File;
 import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Supplier;
 
-public class BaseTest {
+/**
+ * Enhanced BaseTest with smart failure handling
+ * Automatically handles test failures, captures screenshots, and generates reports
+ */
+@ExtendWith(SmartTestExecutionListener.class)
+public class SmartBaseTest {
+    
     protected WebDriver driver;
     protected WebDriverWait wait;
     
@@ -241,7 +254,7 @@ public class BaseTest {
     
     /**
      * Clean up old screenshots before starting new test execution
-     * This ensures only the latest execution screenshots are kept
+     * Only clean up screenshots from previous test runs, not current session
      */
     private void cleanOldScreenshots() {
         try {
@@ -255,28 +268,25 @@ public class BaseTest {
                 return;
             }
             
-            // Get current execution timestamp
-            String currentExecution = java.time.LocalDateTime.now()
-                .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            
-            // Group screenshots by execution (based on timestamp in filename)
+            // Group screenshots by execution ID
             Map<String, List<File>> executionGroups = new HashMap<>();
             
             for (File screenshot : allScreenshots) {
                 String filename = screenshot.getName();
-                String executionId = extractExecutionId(filename);
+                String executionId = ExecutionIdManager.extractExecutionIdFromFilename(filename);
                 executionGroups.computeIfAbsent(executionId, k -> new ArrayList<>()).add(screenshot);
             }
             
-            // Keep only the latest execution, delete others
-            String latestExecution = executionGroups.keySet().stream()
-                .max(String::compareTo)
-                .orElse(currentExecution);
+            // Get current execution ID
+            String currentExecutionId = ExecutionIdManager.getCurrentExecutionId();
             
             int deletedCount = 0;
             for (Map.Entry<String, List<File>> entry : executionGroups.entrySet()) {
-                if (!entry.getKey().equals(latestExecution)) {
-                    // Delete old execution screenshots
+                String executionId = entry.getKey();
+                
+                // Only keep screenshots from the current execution ID
+                // Delete all other screenshots (from previous test runs)
+                if (!currentExecutionId.equals(executionId)) {
                     for (File oldScreenshot : entry.getValue()) {
                         if (oldScreenshot.delete()) {
                             deletedCount++;
@@ -286,7 +296,9 @@ public class BaseTest {
             }
             
             if (deletedCount > 0) {
-                System.out.println("🧹 Cleaned up " + deletedCount + " old screenshots, keeping latest execution: " + latestExecution);
+                System.out.println("🧹 Cleaned up " + deletedCount + " old screenshots from previous test runs");
+            } else {
+                System.out.println("📸 Keeping all screenshots from current test session");
             }
             
         } catch (Exception e) {
@@ -295,14 +307,171 @@ public class BaseTest {
     }
     
     /**
-     * Extract execution ID from screenshot filename
+     * Execute a test step with automatic failure handling
+     * @param stepName Name of the step being executed
+     * @param stepDescription Description of what the step does
+     * @param stepCode The code to execute
+     * @return Result of the step execution
      */
-    private String extractExecutionId(String filename) {
-        // Extract timestamp from filename (format: step_XX_name_YYYYMMDD_HHMMSS.png)
-        String[] parts = filename.split("_");
-        if (parts.length >= 4) {
-            return parts[parts.length - 2] + "_" + parts[parts.length - 1].replace(".png", "");
+    protected <T> T executeStep(String stepName, String stepDescription, Supplier<T> stepCode) {
+        System.out.println("🔄 Executing step: " + stepName + " - " + stepDescription);
+        
+        try {
+            T result = stepCode.get();
+            System.out.println("✅ Step completed: " + stepName);
+            return result;
+        } catch (Exception e) {
+            System.err.println("❌ Step failed: " + stepName + " - " + e.getMessage());
+            handleStepFailure(stepName, e);
+            throw e; // Re-throw to maintain test failure behavior
         }
-        return "unknown";
+    }
+    
+    /**
+     * Execute a test step with automatic failure handling (void return)
+     * @param stepName Name of the step being executed
+     * @param stepDescription Description of what the step does
+     * @param stepCode The code to execute
+     */
+    protected void executeStep(String stepName, String stepDescription, Runnable stepCode) {
+        executeStep(stepName, stepDescription, () -> {
+            stepCode.run();
+            return null;
+        });
+    }
+    
+    /**
+     * Execute a test step with automatic failure handling and screenshot capture
+     * @param stepName Name of the step being executed
+     * @param stepDescription Description of what the step does
+     * @param stepCode The code to execute
+     * @param captureScreenshot Whether to capture screenshot on failure
+     * @return Result of the step execution
+     */
+    protected <T> T executeStep(String stepName, String stepDescription, Supplier<T> stepCode, boolean captureScreenshot) {
+        System.out.println("🔄 Executing step: " + stepName + " - " + stepDescription);
+        
+        try {
+            T result = stepCode.get();
+            System.out.println("✅ Step completed: " + stepName);
+            return result;
+        } catch (Exception e) {
+            System.err.println("❌ Step failed: " + stepName + " - " + e.getMessage());
+            handleStepFailure(stepName, e, captureScreenshot);
+            throw e; // Re-throw to maintain test failure behavior
+        }
+    }
+    
+    /**
+     * Handle step failure with automatic screenshot capture
+     * @param stepName Name of the failed step
+     * @param exception The exception that occurred
+     */
+    protected void handleStepFailure(String stepName, Exception exception) {
+        // Don't capture screenshot here - let the SmartTestExecutionListener handle it
+        // to avoid duplicate screenshots
+        handleStepFailure(stepName, exception, false);
+    }
+    
+    /**
+     * Handle step failure with optional screenshot capture
+     * @param stepName Name of the failed step
+     * @param exception The exception that occurred
+     * @param captureScreenshot Whether to capture screenshot
+     */
+    protected void handleStepFailure(String stepName, Exception exception, boolean captureScreenshot) {
+        // Record failure in tracker
+        String testName = TestResultTracker.getCurrentTestName();
+        if (testName != null) {
+            TestResultTracker.recordFailure(testName, stepName, exception);
+        }
+        
+        // Capture screenshot if requested and in appropriate mode
+        if (captureScreenshot) {
+            String screenshotPath = handleTestFailure(stepName, exception);
+            if (screenshotPath != null && testName != null) {
+                TestResultTracker.recordScreenshot(testName);
+            }
+        }
+    }
+    
+    /**
+     * Safe element interaction with automatic failure handling
+     * @param stepName Name of the step
+     * @param elementSupplier Supplier that returns the WebElement
+     * @param interaction Interaction to perform on the element
+     */
+    protected void safeElementInteraction(String stepName, Supplier<WebElement> elementSupplier, 
+                                        java.util.function.Consumer<WebElement> interaction) {
+        executeStep(stepName, "Interacting with element", () -> {
+            WebElement element = elementSupplier.get();
+            interaction.accept(element);
+        });
+    }
+    
+    /**
+     * Safe navigation with automatic failure handling
+     * @param stepName Name of the step
+     * @param url URL to navigate to
+     */
+    protected void safeNavigate(String stepName, String url) {
+        executeStep(stepName, "Navigating to " + url, () -> {
+            driver.get(url);
+        });
+    }
+    
+    /**
+     * Safe wait with automatic failure handling
+     * @param stepName Name of the step
+     * @param conditionDescription Description of what we're waiting for
+     * @param waitCondition The wait condition
+     */
+    protected <T> T safeWait(String stepName, String conditionDescription, 
+                            java.util.function.Function<WebDriverWait, T> waitCondition) {
+        return executeStep(stepName, "Waiting for " + conditionDescription, () -> {
+            return waitCondition.apply(wait);
+        });
+    }
+    
+    /**
+     * Safe assertion with automatic failure handling
+     * @param stepName Name of the step
+     * @param assertionDescription Description of the assertion
+     * @param assertion The assertion to perform
+     */
+    protected void safeAssert(String stepName, String assertionDescription, Runnable assertion) {
+        executeStep(stepName, "Asserting " + assertionDescription, () -> {
+            assertion.run();
+        });
+    }
+    
+    /**
+     * Generate test report for current test
+     */
+    protected void generateTestReport() {
+        System.out.println("📊 Generating test report...");
+        ReportGenerator.generateReport();
+    }
+    
+    /**
+     * Get current test execution info
+     */
+    protected TestResultTracker.TestExecutionInfo getCurrentTestInfo() {
+        String testName = TestResultTracker.getCurrentTestName();
+        return testName != null ? TestResultTracker.getTestInfo(testName) : null;
+    }
+    
+    /**
+     * Check if current test has failures
+     */
+    protected boolean hasCurrentTestFailures() {
+        return TestResultTracker.hasCurrentTestFailures();
+    }
+    
+    /**
+     * Get test execution summary
+     */
+    protected String getTestExecutionSummary() {
+        return TestResultTracker.getExecutionSummary();
     }
 }

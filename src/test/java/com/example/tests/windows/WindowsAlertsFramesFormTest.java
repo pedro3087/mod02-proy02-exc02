@@ -12,13 +12,14 @@ import java.time.Duration;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import com.example.base.BaseTest;
+import com.example.base.SmartBaseTest;
+import com.example.utils.ReportGenerator;
 
 /**
  * Test class for handling multiple browser windows/tabs and JavaScript alerts
  * Demonstrates window switching, handle management, alert handling, and assertions
  */
-public class WindowsAlertsFramesFormTest extends BaseTest {
+public class WindowsAlertsFramesFormTest extends SmartBaseTest {
 
     @Test
     public void testWindows() {
@@ -237,6 +238,10 @@ public class WindowsAlertsFramesFormTest extends BaseTest {
         assertEquals("Received!", confirmationMessage.getText(), "Form submission confirmation should be 'Received!'");
         
         System.out.println("Form automation test completed successfully!");
+        
+        // Generate beautiful HTML report with screenshots
+        System.out.println("📊 Generating beautiful HTML report with screenshots...");
+        ReportGenerator.generateReport();
     }
 
     /**
@@ -275,9 +280,8 @@ public class WindowsAlertsFramesFormTest extends BaseTest {
             handleTestFailure("03_Element_Not_Found", e);
             System.out.println("Screenshot 3 - SHOULD be captured (failure occurred)");
             
-            // This screenshot should be captured (failure has occurred) - uses centralized config
-            captureScreenshot("04_After_Failure");
-            System.out.println("Screenshot 4 - Should be captured (failure occurred)");
+            // Note: No additional screenshot needed - handleTestFailure already captured one
+            System.out.println("Screenshot 4 - Skipped (already captured in handleTestFailure)");
         }
         
         System.out.println("Failure-only screenshot demonstration completed!");
